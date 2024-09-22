@@ -1,0 +1,300 @@
+Script started on Mon 12 Feb 2024 06:42:54 PM EST
+]0;johnston_ar@cobra:~/Project1[?1034h[johnston_ar@cobra Project1]$ cat editor.cpp
+#include <iostream>
+#include <cstdlib>
+#include <string>
+#include <fstream>
+using namespace std;
+#include "linelist.h"
+
+void fileFetch(int argc, char *argv[], LineList &myFEdit);
+void FinishUp(char * argv[], LineList& L);
+
+int main(int argc, char *argv[]){	
+	//Post: main
+
+	//create a "file" where information can be edited
+	LineList myFEdit;
+	//enter retrieved text file information into the editable.
+	fileFetch(argc, argv, myFEdit);
+	//prepare for user input
+	string userText;
+        int lineNum;
+	char userChoice;
+/*	 
+	  Primary While loop: 
+	  Runs continuously, while running, user may enter any of the usable
+	  inputs to edit, traverse, and print out the text file.
+	  Will notify when the user applies a non existent command.
+
+	  A list of usable commands is as such:
+		T: go to the top of the editable file
+		B: go to the bottom of the editable file
+		I: create a new line to be inserted into the editable.
+		D: delete current line
+		L: print out current list entirely
+		N: go to next line
+		P: go to previous line
+		E: exit and save the file.
+*/
+	while(1){
+		cout << myFEdit.getCurrLineNum() << "> ";
+		cin >> userChoice; cin.ignore(); 
+		switch(userChoice){
+			case 'T':
+				myFEdit.goToTop(); break;
+			case 'B':
+				myFEdit.goToBottom(); break;
+			case 'I':
+                            lineNum = myFEdit.getCurrLineNum()+1;
+                            if (myFEdit.getCurrLineNum() > myFEdit.getLength())
+                                    lineNum--;
+
+                            cout << lineNum << "> ";
+                            getline (cin, userText);
+                            myFEdit.insertLine(userText);
+                            break;
+
+			case 'D':
+				myFEdit.deleteLine(); break;
+			case 'L':
+				myFEdit.printList(); break;
+			case 'N':
+				myFEdit.moveNextLine(); break;
+			case 'P':
+				myFEdit.movePrevLine(); break;
+			case 'E':
+                                FinishUp(argv, myFEdit);
+				break;
+			default:
+				cout << "Invalid input try again" << endl;
+		}
+		
+	}
+return 0;
+}
+
+
+void fileFetch(int argc, char *argv[], LineList &myFEdit){
+	//Post: acquire a local text file and enter it into an editable "my file"
+
+	//if the file name is not correct, or no filename is input, an error will notify
+  	 if(argc == 1){
+		cout << "Error: No filename input!" << endl;
+		exit(1);	
+	}
+	//put the filename in a string and use that name to find the file
+	string filename = argv[1];
+	ifstream infile(filename.c_str());
+	//exit if file opening error
+	if(!infile){
+		cout << "Error opening file" << endl;
+		exit(1);
+	}
+	//insert file lines into myFEdit
+	string line;
+	while (getline(infile, line)){
+		cout << myFEdit.getCurrLineNum() << "> " << line << endl;
+		myFEdit.insertLine(line);
+	}
+	
+   infile.close();
+}
+
+
+void FinishUp (char *argv[], LineList& L)
+{
+        //Post: takes current text and replaces the orginal file text
+        
+        //begin by opening an out stream
+	ofstream outfile;
+        string filename = argv[1];
+        outfile.open(filename.c_str());
+        //return to top of list and enter each line into original file.
+	L.goToTop();
+        for (int i = 1;  i <= L.getLength();  i++)
+        {
+                outfile << L.getCurrLine() << endl;
+                L.moveNextLine();
+        }
+        //close and end the program.
+	outfile.close();
+        exit(1);
+}
+
+]0;johnston_ar@cobra:~/Project1[johnston_ar@cobra Project1]$ cat linelist.cpp
+#include <iostream>
+#include "linelist.h"
+
+LineList::LineList()
+{
+	LineNode *line = new LineNode;
+	LineNode *line2 = new LineNode;
+
+	line -> info = topMessage;
+	currLine = line;
+	currLineNum = 1;
+	length = 0;
+	line2 -> info = bottomMessage;
+	currLine -> back = NULL;
+	currLine -> next = line2;
+	line2 -> back = line;
+	line2 -> next = NULL;
+}
+
+void LineList::goToTop() 
+{
+	// Post : Advances currLine to line 1
+	
+	// goes to line 0 which is under top message
+	while (currLine -> info != topMessage)
+		currLine = currLine -> back;
+	//returns current line to line 1
+	currLine = currLine -> next;
+	currLineNum = 1;
+}
+
+void LineList::goToBottom() 
+{
+	// Post : Advances currLine to last line
+	
+	// goes to final line and stops at bottom message
+	while (currLine -> info != bottomMessage)
+		currLine = currLine -> next;
+	//returns to the last written line instead of a blank
+	currLine = currLine -> back;
+	currLineNum = length;
+}
+
+void LineList::insertLine(string newLine)
+{
+	// post : newLine has been inserted after the current line
+	
+	// makes sure the line is not on the bottom message
+	if ( currLine -> info == bottomMessage )
+           movePrevLine();
+	//create a new line node, assign necessary info
+	LineNode *line = new LineNode;
+	line -> info = newLine;
+	line -> back = currLine;
+	line -> next = currLine -> next;
+	//makes sure the neighbor lines are linked to new line
+	currLine -> next -> back = line;
+	currLine -> next = line;
+	currLine = currLine -> next;
+	//adds to current line num and length of list
+	currLineNum++;
+	length++;
+}
+
+void LineList::deleteLine()
+{
+	// post : deletes the current line leaving currentLine
+	//	  pointing to line following
+	
+	//correct current line placement
+	if ( (currLine -> info != topMessage) &&
+	     (currLine -> info != bottomMessage) )
+	{
+		//create new temp line to replace neghbor links
+		LineNode *line = currLine;
+		currLine -> next -> back = currLine -> back;
+		currLine -> back -> next = currLine -> next;
+		currLine = currLine -> next;
+
+		delete line;
+		//fix line placement
+		if (currLineNum >= length)
+			currLineNum--;
+
+		length--;
+		//make sure current line is not top or bottom.
+		if (currLine -> info == topMessage)
+			currLine = currLine -> next;
+
+		if (currLine -> info == bottomMessage)
+			currLine = currLine -> back;
+	}
+}
+
+void LineList::printList() 
+{
+	//Post: Print out the entire current lins
+	
+	//save current line number to return to later
+	int lineNum = 1;
+	LineNode *mark = currLine;
+	int markNum = currLineNum;
+	//begin at top and print each lines info as each line is traversed.
+	goToTop();
+	LineNode *line = currLine;
+	while (line -> info != bottomMessage)
+	{
+		cout << lineNum << "> " << line -> info << endl;
+		line = line -> next;
+		lineNum++;
+	}
+	//return to the saved line.
+	currLine = mark;
+	currLineNum = markNum;
+}
+
+string LineList::getCurrLine() const
+{
+	return (currLine -> info);
+}
+
+void LineList::moveNextLine()
+{
+	// Post : Advances currLine (unless already at last line)
+	
+	//as long as we are not at bottom or out of bounds,
+	//go to next line
+	if ( (currLine -> next != NULL) &&
+	     (currLine -> info != bottomMessage) )
+	{
+	 	currLine = currLine -> next;
+	 	currLineNum++;
+	}
+
+}
+
+void LineList::movePrevLine()
+{
+	// Post : Advances currLine (unless already at last line)
+	
+	//as long as we are not at the top or out of bounds,
+	//go to the previous line
+	if ( (currLine -> back != NULL) &&
+	     (currLine -> info != topMessage) )
+	{
+	 	currLine = currLine -> back;
+	 	currLineNum--;
+	}
+}
+
+int LineList::getCurrLineNum() const
+{
+	return currLineNum;
+}
+
+int LineList::getLength() const
+{
+	return length;
+}
+]0;johnston_ar@cobra:~/Project1[johnston_ar@cobra Project1]$ c++ editor.cpp lineslist[K[K[K[K[Klist.o
+]0;johnston_ar@cobra:~/Project1[johnston_ar@cobra Project1]$ a.out testfile
+bash: a.out: command not found...
+]0;johnston_ar@cobra:~/Project1[johnston_ar@cobra Project1]$ a.out testfile[1@.[1@/
+1> Line1
+2> Line2
+3> Line3 
+4> New line!
+5> This thing works!
+6> Re-inserting Line6
+7> thing7
+8> exit    E
+]0;johnston_ar@cobra:~/Project1[johnston_ar@cobra Project1]$ exit
+exit
+
+Script done on Mon 12 Feb 2024 06:44:35 PM EST

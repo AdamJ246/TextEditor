@@ -1,0 +1,36 @@
+This is the README for the Text editing program: Project1
+by Adam Johnston
+
+1. The Goal of the program was to make a file inputting text editor that could then save
+that file back to the orginal file. This was solved using primarily pointers to create an
+extensive Linked list that contained each line of the text file.
+
+2. Particularly, the client program used input and output file streams to access the local
+text file named "testfile", edit said file with the program, before saving it in the output.
+
+3. OOP:
+	The client file uses the standard classes iostream, cstdlib, string, and fstream. (in addition to namespace std)
+	the client file uses a single implemented and local class called linelist for
+	all of the functions used.
+	linelist.h and linelist.cpp use a specific selection of standard classes of the listed ^.
+
+	The only implemented class, LineList, within linelist.h includes:
+		A private linenode pointer called currLine, a current line number integer,
+		and an integer called length.
+		There are also some constant strings to represent the top and the bottom text lines.
+		Operations include:
+		A struct LineNode so that each node can be connected to another node and have info.
+		A list of public functions to use the program. Their functions are just as the names
+		suggest:
+			void: goToTop(), goToBottom(), insertLine(string newLine), deleteLine(), printList(),
+			moveNextLine(), movePrevLine(), saveFile(const string& filename) const
+			int: getCurretnLineNum() const, getLength() const
+			string: getCurrLine() const
+	The algorithm of the client file can be described as: A hub for the specific inputs of the program.
+	It begins with two prototypes for the retrieval and saving of the external text file. Afterwards,
+	the main begins, taking into consideration argc and *arv[]; create an editable text file that
+	retrieves all original file text (using a fileFetch function) before preparing for user string,
+	int, and char inputs.
+	Then, a perpetual while loop is created that prints out an input line for the user to type a command
+	char to activate any of the previously listed void functions: In order: T, B, I, D, L, N, P, E.
+	When the user hits E, a function is called to insert the edited text into the original file.
